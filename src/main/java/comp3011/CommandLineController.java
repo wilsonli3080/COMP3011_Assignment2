@@ -58,7 +58,7 @@ public class CommandLineController {
     }
 
     public int getExitCode() {
-        return errorMessage == null ? 0 : 1;
+        return (helpRequested || errorMessage == null) ? 0 : 1;
     }
 
     public Integer getDisplayId() {
@@ -74,15 +74,23 @@ public class CommandLineController {
     }
 
     public boolean shouldLaunchApplication() {
-        return errorMessage == null && videoFile != null;
+        return !helpRequested && errorMessage == null && videoFile != null;
     }
 
     private void parse() {
-        List<String> videoFiles = new ArrayList<>();
         for (String arg : args) {
             if ("-h".equals(arg) || "--help".equals(arg)) {
                 helpRequested = true;
-            } else if ("-a".equals(arg) || "--audio".equals(arg)) {
+            }
+        }
+
+        List<String> videoFiles = new ArrayList<>();
+        for (String arg : args) {
+            if ("-h".equals(arg) || "--help".equals(arg)) {
+                continue;
+            }
+
+            if ("-a".equals(arg) || "--audio".equals(arg)) {
                 audioRequested = true;
             } else if ("-x".equals(arg) || "--maximise".equals(arg)) {
                 maximiseRequested = true;
@@ -94,17 +102,28 @@ public class CommandLineController {
                 if (arg.length() > 2 && !arg.startsWith("--")) {
                     for (int i = 1; i < arg.length(); i++) {
                         if (!acceptEffectFlag(arg.charAt(i))) {
+                            if (helpRequested) {
+                                continue;
+                            }
                             errorMessage = "Unknown option: " + arg;
                             return;
                         }
                     }
                 } else if (!acceptLongOrShortEffectFlag(arg)) {
+                    if (helpRequested) {
+                        continue;
+                    }
                     errorMessage = "Unknown option: " + arg;
                     return;
                 }
             } else {
                 videoFiles.add(arg);
             }
+        }
+
+        if (helpRequested) {
+            errorMessage = null;
+            return;
         }
 
         if (videoFiles.size() > 1) {
@@ -116,9 +135,7 @@ public class CommandLineController {
                 videoFile = null;
             }
         } else {
-            if (!helpRequested) {
-                errorMessage = "No video file specified.";
-            }
+            errorMessage = "No video file specified.";
         }
     }
 
