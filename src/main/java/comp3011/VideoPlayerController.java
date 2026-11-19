@@ -11,6 +11,8 @@
 package comp3011;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import javafx.scene.Scene;
@@ -33,18 +35,39 @@ public class VideoPlayerController {
 
     public VideoPlayerController(
             boolean audioEnabled,
-            java.util.List<FrameProcessor> frameProcessors,
+            List<FrameProcessor> frameProcessors,
+            BiConsumer<Integer, Integer> videoSizeChangedHandler) {
+        this(audioEnabled, frameProcessors, false, videoSizeChangedHandler);
+    }
+
+    public VideoPlayerController(
+            boolean audioEnabled,
+            List<FrameProcessor> frameProcessors,
+            boolean subtitlesInitiallyEnabled,
             BiConsumer<Integer, Integer> videoSizeChangedHandler) {
         this.view = new VideoPlayerView();
         this.videoSizeChangedHandler = videoSizeChangedHandler;
+        List<FrameProcessor> processors = new ArrayList<>(
+                frameProcessors == null ? List.of() : frameProcessors);
+        SubtitleFrameProcessor subtitleProcessor = processors.stream()
+                .filter(SubtitleFrameProcessor.class::isInstance)
+                .map(SubtitleFrameProcessor.class::cast)
+                .findFirst()
+                .orElseGet(() -> {
+                    SubtitleFrameProcessor processor = new SubtitleFrameProcessor();
+                    processors.add(processor);
+                    return processor;
+                });
         model = new VideoPlayerModel(
                 audioEnabled,
-                frameProcessors,
+                processors,
                 this::onVideoSizeChanged,
                 this::onFrameReady,
                 this::onStatusChanged,
                 this::onPlaybackStateChanged,
-                this::onAudioOutputStateChanged);
+                this::onAudioOutputStateChanged,
+                subtitleProcessor,
+                subtitlesInitiallyEnabled);
 
         view.getStartOverButton().setOnAction(_ -> startOver());
         view.getBackFiveButton().setOnAction(_ -> backFiveSeconds());
@@ -52,7 +75,9 @@ public class VideoPlayerController {
         view.getForwardFiveButton().setOnAction(_ -> forwardFiveSeconds());
         view.getStopButton().setOnAction(_ -> stopAndExit());
         view.getAudioButton().setOnAction(_ -> toggleAudioOutput());
+        view.getSubtitlesButton().setOnAction(_ -> toggleSubtitles());
         view.showAudioEnabled(model.isAudioOutputEnabled());
+        view.showSubtitlesEnabled(subtitlesInitiallyEnabled);
     }
 
     public void installKeyboardShortcuts(Scene scene) {
@@ -74,6 +99,9 @@ public class VideoPlayerController {
                 event.consume();
             } else if (event.getCode() == KeyCode.A) {
                 toggleAudioOutput();
+                event.consume();
+            } else if (event.getCode() == KeyCode.S) {
+                toggleSubtitles();
                 event.consume();
             }
         });
@@ -110,6 +138,10 @@ public class VideoPlayerController {
 
     private void toggleAudioOutput() {
         model.toggleAudioOutput();
+    }
+
+    private void toggleSubtitles() {
+        view.showSubtitlesEnabled(model.toggleSubtitles());
     }
 
     private void stopAndExit() {

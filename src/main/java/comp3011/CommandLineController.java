@@ -28,6 +28,7 @@ public class CommandLineController {
 
     private boolean helpRequested;
     private boolean audioRequested;
+    private boolean subtitleRequested;
     private boolean maximiseRequested;
     private Integer displayId;
     private File videoFile;
@@ -67,6 +68,10 @@ public class CommandLineController {
 
     public boolean isAudioRequested() {
         return audioRequested;
+    }
+
+    public boolean isSubtitleRequested() {
+        return subtitleRequested;
     }
 
     public boolean isMaximiseRequested() {
@@ -184,6 +189,11 @@ public class CommandLineController {
             frameProcessors.add(new FramePepperer());
             return true;
         }
+        if ("-S".equals(arg) || "--subtitle-frames".equals(arg)) {
+            subtitleRequested = true;
+            frameProcessors.add(new SubtitleFrameProcessor());
+            return true;
+        }
         return false;
     }
 
@@ -211,6 +221,9 @@ public class CommandLineController {
                 return addEffect(new FrameBleeder());
             case 'p':
                 return addEffect(new FramePepperer());
+            case 'S':
+                subtitleRequested = true;
+                return addEffect(new SubtitleFrameProcessor());
             default:
                 return false;
         }
@@ -251,6 +264,7 @@ public class CommandLineController {
         System.out.println("  -m, --mottle-frames    Add cloudy emulsion mottling");
         System.out.println("  -b, --bleed-frames     Bleed light into frames");
         System.out.println("  -p, --pepper-frames    Pepper frames with dark spots/blotches");
+        System.out.println("  -S, --subtitle-frames  Render speech-to-text subtitles onto frames");
         System.out.println();
         System.out.println("Frame processors are applied in command-line order and may be repeated.");
         System.out.println("Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,");

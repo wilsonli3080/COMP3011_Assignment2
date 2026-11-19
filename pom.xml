@@ -30,6 +30,11 @@
       <version>${javafx.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.19.2</version>
+    </dependency>
+    <dependency>
       <groupId>org.bytedeco</groupId>
       <artifactId>javacv</artifactId>
       <version>${javacv.version}</version>
@@ -93,6 +98,7 @@
                 <mainClass>comp3011.VideoPlayerAppLauncher</mainClass>
                 <manifestEntries>
                   <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                  <Add-Modules>jdk.httpserver</Add-Modules>
                 </manifestEntries>
               </transformer>
             </transformers>
@@ -121,6 +127,7 @@
           <options>
               <option>--enable-native-access=javafx.graphics</option>
               <option>--enable-native-access=ALL-UNNAMED</option>
+              <option>--add-modules=jdk.httpserver</option>
           </options>
       </configuration>
     </plugin>
@@ -163,6 +170,7 @@
                       <mainClass>comp3011.VideoPlayerAppLauncher</mainClass>
                       <manifestEntries>
                         <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                        <Add-Modules>jdk.httpserver</Add-Modules>
                       </manifestEntries>
                     </transformer>
                   </transformers>

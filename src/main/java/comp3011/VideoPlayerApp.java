@@ -34,6 +34,7 @@ public class VideoPlayerApp extends Application {
     private static CommandLineController commandLineController;
 
     private VideoPlayerController controller;
+    private SubtitleServer subtitleServer;
     private Stage stage;
     private Rectangle2D selectedScreenBounds;
     private int videoWidth;
@@ -43,9 +44,16 @@ public class VideoPlayerApp extends Application {
     public void start(Stage stage) {
         this.stage = stage;
 
+        try {
+            subtitleServer = SubtitleServer.start();
+        } catch (java.io.IOException e) {
+            System.err.println("Could not start the local subtitle API: " + e.getMessage());
+        }
+
         controller = new VideoPlayerController(
                 commandLineController.isAudioRequested(),
                 commandLineController.getFrameProcessors(),
+                commandLineController.isSubtitleRequested(),
                 this::setVideoSize);
 
         Scene scene = new Scene(controller.getView().getRoot());
@@ -59,7 +67,10 @@ public class VideoPlayerApp extends Application {
 
         stage.outputScaleXProperty().addListener((_, _, _) -> updateVideoSize());
         stage.outputScaleYProperty().addListener((_, _, _) -> updateVideoSize());
-        stage.setOnCloseRequest(_ -> controller.shutdown());
+        stage.setOnCloseRequest(_ -> {
+            controller.shutdown();
+            closeSubtitleServer();
+        });
 
         playVideo();
     }
@@ -135,6 +146,14 @@ public class VideoPlayerApp extends Application {
     public void stop() {
         if (controller != null) {
             controller.shutdown();
+        }
+        closeSubtitleServer();
+    }
+
+    private void closeSubtitleServer() {
+        if (subtitleServer != null) {
+            subtitleServer.close();
+            subtitleServer = null;
         }
     }
 

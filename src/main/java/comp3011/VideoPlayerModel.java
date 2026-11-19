@@ -50,6 +50,8 @@ public class VideoPlayerModel {
     private final Consumer<String> statusChangedHandler;
     private final BiConsumer<Boolean, Boolean> playbackStateChangedHandler;
     private final Consumer<Boolean> audioOutputStateChangedHandler;
+    private final SubtitleFrameProcessor subtitleProcessor;
+    private final SubtitleClient subtitleClient = new SubtitleClient();
 
     // This is the critical wiring that allows the framework (JavaFX) to call
     // into our model logic every time it goes around its event loop. Every GUI
@@ -77,6 +79,7 @@ public class VideoPlayerModel {
     private boolean audioOutputEnabled;
     private boolean audioAvailable;
     private boolean frameProcessorsInitialised;
+    private boolean subtitleRequestStarted;
     private long currentTimestampUs;
     private long videoDurationUs = NO_SEEK_REQUEST;
     private int videoFrameDurationUs;
@@ -97,20 +100,50 @@ public class VideoPlayerModel {
             Consumer<String> statusChangedHandler,
             BiConsumer<Boolean, Boolean> playbackStateChangedHandler,
             Consumer<Boolean> audioOutputStateChangedHandler) {
+        this(
+                audioEnabled,
+                frameProcessors,
+                videoSizeChangedHandler,
+                frameReadyHandler,
+                statusChangedHandler,
+                playbackStateChangedHandler,
+                audioOutputStateChangedHandler,
+                new SubtitleFrameProcessor(),
+                false);
+    }
+
+    public VideoPlayerModel(
+            boolean audioEnabled,
+            List<FrameProcessor> frameProcessors,
+            BiConsumer<Integer, Integer> videoSizeChangedHandler,
+            Consumer<Image> frameReadyHandler,
+            Consumer<String> statusChangedHandler,
+            BiConsumer<Boolean, Boolean> playbackStateChangedHandler,
+            Consumer<Boolean> audioOutputStateChangedHandler,
+            SubtitleFrameProcessor subtitleProcessor,
+            boolean subtitlesInitiallyEnabled) {
         audioOutputEnabled = audioEnabled;
         this.videoSizeChangedHandler = videoSizeChangedHandler;
         this.frameReadyHandler = frameReadyHandler;
         this.statusChangedHandler = statusChangedHandler;
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
+        this.subtitleProcessor = subtitleProcessor;
+        this.subtitleProcessor.setEnabled(subtitlesInitiallyEnabled);
         this.frameProcessors = new ArrayList<>(frameProcessors == null ? List.of() : frameProcessors);
     }
 
     public void play(File file) {
+        subtitleClient.cancel();
+        subtitleRequestStarted = false;
         videoFile = file;
         videoDurationUs = NO_SEEK_REQUEST;
         videoFrameDurationUs = 0;
+        subtitleProcessor.clearCues();
         startPlayback(0, false, NO_SEEK_REQUEST);
+        if (subtitleProcessor.isEnabled()) {
+            startSubtitleRequest();
+        }
     }
 
     public void startOver() {
@@ -157,6 +190,19 @@ public class VideoPlayerModel {
         notifyAudioOutputStateChanged();
     }
 
+    public boolean toggleSubtitles() {
+        subtitleProcessor.setEnabled(!subtitleProcessor.isEnabled());
+        if (subtitleProcessor.isEnabled()) {
+            notifyStatusChanged("Subtitles enabled");
+        } else {
+            notifyStatusChanged("Subtitles disabled");
+        }
+        if (subtitleProcessor.isEnabled() && !subtitleRequestStarted) {
+            startSubtitleRequest();
+        }
+        return subtitleProcessor.isEnabled();
+    }
+
     public boolean isAudioOutputEnabled() {
         return audioOutputEnabled;
     }
@@ -172,6 +218,7 @@ public class VideoPlayerModel {
 
     public void shutdown() {
         closePlaybackResources();
+        subtitleClient.close();
     }
 
     private void seekRelative(long offsetUs) {
@@ -585,6 +632,24 @@ public class VideoPlayerModel {
 
     private void notifyAudioOutputStateChanged() {
         audioOutputStateChangedHandler.accept(audioOutputEnabled);
+    }
+
+    private void onSubtitleStatusChanged(String status) {
+        if (subtitleProcessor.isEnabled()) {
+            Platform.runLater(() -> {
+                if (subtitleProcessor.isEnabled()) {
+                    notifyStatusChanged(status);
+                }
+            });
+        }
+    }
+
+    private void startSubtitleRequest() {
+        if (videoFile == null || subtitleRequestStarted) {
+            return;
+        }
+        subtitleRequestStarted = true;
+        subtitleClient.requestSubtitles(videoFile, subtitleProcessor::addCues, this::onSubtitleStatusChanged);
     }
 
     private record PreparedFrame(

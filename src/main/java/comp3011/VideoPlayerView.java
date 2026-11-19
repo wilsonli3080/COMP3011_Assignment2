@@ -57,6 +57,7 @@ public class VideoPlayerView {
     private final Button forwardFiveButton;
     private final Button stopButton;
     private final Button audioButton;
+    private final Button subtitlesButton;
 
     public VideoPlayerView() {
         imageView.setPreserveRatio(true);
@@ -75,6 +76,7 @@ public class VideoPlayerView {
         forwardFiveButton = iconButton(createLoopIcon(true, "5"));
         stopButton = iconButton(createStopIcon());
         audioButton = iconButton(createAudioIcon(false));
+        subtitlesButton = iconButton(createSubtitleIcon(false));
         setPlaybackControlsDisabled(true);
 
         HBox controls = new HBox(
@@ -85,6 +87,7 @@ public class VideoPlayerView {
                 forwardFiveButton,
                 stopButton,
                 audioButton,
+                subtitlesButton,
                 statusLabel);
 
         controls.setPadding(new Insets(10));
@@ -127,6 +130,10 @@ public class VideoPlayerView {
         return audioButton;
     }
 
+    public Button getSubtitlesButton() {
+        return subtitlesButton;
+    }
+
     public void setStatus(String status) {
         statusLabel.setText(status);
     }
@@ -151,6 +158,11 @@ public class VideoPlayerView {
         audioButton.setGraphic(createAudioIcon(audioEnabled));
     }
 
+    public void showSubtitlesEnabled(boolean subtitlesEnabled) {
+        subtitlesButton.setGraphic(createSubtitleIcon(subtitlesEnabled));
+        subtitlesButton.setAccessibleText(subtitlesEnabled ? "Subtitles on" : "Subtitles off");
+    }
+
     public void setPlaybackControlsDisabled(boolean disabled) {
         startOverButton.setDisable(disabled);
         backFiveButton.setDisable(disabled);
@@ -158,6 +170,7 @@ public class VideoPlayerView {
         forwardFiveButton.setDisable(disabled);
         stopButton.setDisable(disabled);
         audioButton.setDisable(disabled);
+        subtitlesButton.setDisable(disabled);
     }
 
     // There are a bunch of tooltip handling methods starting from here. We want to use tooltips so that people with
@@ -169,6 +182,7 @@ public class VideoPlayerView {
         setButtonTooltip(forwardFiveButton, "[RIGHT]");
         setButtonTooltip(stopButton, "[ESC]");
         setButtonTooltip(audioButton, "[A]");
+        setButtonTooltip(subtitlesButton, "[S]");
     }
 
     private void setButtonTooltip(Button button, String text) {
@@ -336,6 +350,18 @@ public class VideoPlayerView {
         }
 
         return pane;
+    }
+
+    private Node createSubtitleIcon(boolean subtitlesEnabled) {
+        Label label = new Label("CC");
+        label.setAlignment(Pos.CENTER);
+        label.setMinSize(23, 17);
+        label.setPrefSize(23, 17);
+        label.setMaxSize(23, 17);
+        String colour = subtitlesEnabled ? "#1769aa" : "black";
+        label.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + colour + ";"
+                + "-fx-border-color: " + colour + "; -fx-border-width: 1.5; -fx-border-radius: 2;");
+        return label;
     }
 
     // Little helper for different radius waves coming out of the speaker.
