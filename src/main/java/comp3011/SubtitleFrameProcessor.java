@@ -16,11 +16,6 @@ import org.bytedeco.javacv.Frame;
 
 /**
  * Renders time-matched subtitle cues directly onto decoded video frames.
- *
- * <p>AI-assistance note: GitHub Copilot assisted with subtitle wrapping,
- * timing, and frame-overlay implementation in this class. The implementation
- * was reviewed and adapted for this project; the student retained responsibility
- * for integration, testing, and final code decisions.</p>
  */
 public class SubtitleFrameProcessor extends FrameProcessor {
     private static final int MAX_LINE_LENGTH = 42;
